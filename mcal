@@ -1,0 +1,143 @@
+#!/bin/bash
+
+######################################################################
+#This is a program to display a caledar month using Zeller Congruence.
+#Author: Jerin Samuel
+#Command: mcal -m <1 to 12> -y <2000 to 2099>
+######################################################################
+
+#Initialize variables to default values.
+MONTH=0
+YEAR=0
+
+#This is the help method
+helpFunction() {
+	printf "Input variable conditions:[-m <1 to 12> [-y <2000 to 2099>]";
+	exit 1;
+}
+
+#This method checks if the input year is a leap year or not
+leapYearCheck() {
+	arg1=$1 
+	if ((arg1 % 400 == 0)); then leapYear=1;
+	elif ((arg1 % 100 == 0)); then leapYear=0;
+	elif ((arg1 % 4 == 0)); then leapYear=1;
+	else
+	leapYear=0;
+	fi
+}
+
+#This method calculates the first day of the month using Zeller Congruence
+firstDayOfMonth(){
+	month=$1
+	year=$2
+	if(( month == 1 || month == 2 ));
+	then
+		(( month+=12 ))
+		(( year-=1 ))
+    fi
+	#Zeller Congruence formulae
+	let dayOfMonth=$(( (1 + (((month + 1) * 26) / 10) + year + (year / 4) + 6 * (year / 100) + (year / 400)) % 7 ))
+	case "${dayOfMonth}" in
+		0) printf "First day of the given month is a Saturday.\n"
+			;;
+		1) printf "First day of the given month is a Sunday.\n"
+			;;
+		2) printf "First day of the given month is a Monday.\n"
+			;;
+		3) printf "First day of the given month is a Tuesday.\n"
+			;;
+		4) printf "First day of the given month is a Wednesday.\n"
+			;;
+		5) printf "First day of the given month is a Thursday.\n"
+			;;
+		*) printf "First day of the given month is a Friday.\n"
+		   ;;
+	esac
+	printf "\n"
+}
+
+#This method is used to check how many days in the given month
+numDaysInMonth(){
+	month=$1
+	declare -ai daysInMonth=('0' '31' '28' '31' '30' '31' '30' '31' '31' '30' '31' '30' '31');
+	if (( month == 2 && "$leapYear" == 1 ));
+	then
+		daysInMonth[${month}]=29
+	fi
+	numberOfDays=${daysInMonth[${month}]};
+}
+
+#This method is used to print the caledar
+printCalendar(){
+	month=$1
+	year=$2
+	monthNames=('' 'January' 'February' 'March' 'April' 'May' 'June' 'July' 'August' 'September' 'October' 'November' 'December');
+	printf "     %s %s\n" "${monthNames[$month]}" "${year}"
+	printf "Su Mo Tu We Th Fr Sa\n"
+	# Index correction for months starting with saturday
+	if (( dayOfMonth == 0 ));
+	then
+		startIndex=7
+	else
+		startIndex=${dayOfMonth}
+	fi
+	for (( i=startIndex ; i>1; i-- ))
+	do
+		printf "   " #3 spaces are inserted
+	done
+	for (( i=1; i<=numberOfDays; i++ ))
+	do
+	    printf "%2d " "${i}" #dual space insert
+		if (( ((i + dayOfMonth - 1) % 7 == 0) || (i == numberOfDays) ));
+			then printf "\n"; #week complete. Go to next line
+		fi
+	done
+}
+
+#If no arguments given, print help function and exit.
+NUMARGS=$#
+if [ "$NUMARGS" -eq 0 ]; then
+  helpFunction
+fi
+
+#Parse the input parameters for the month and year
+while getopts ":m:y:" opt; do
+    case "${opt}" in
+        m)
+			(( OPTARG >= 1 && OPTARG <= 12 )) && MONTH=${OPTARG} || printf "MONTH is NOT set as %d\n" "${OPTARG}"
+            ;;
+        y)
+			(( OPTARG >= 2000 && OPTARG <= 2099 )) && YEAR=${OPTARG} || printf "YEAR is NOT set as %d\n" "${OPTARG}"
+            ;;
+        *)
+			printf  "Incorrect input option!!!\n"
+            helpFunction
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if (( MONTH == 0 || YEAR == 0 )); then
+	helpFunction
+fi
+
+# Check if the given year is a leap year or not
+leapYearCheck "${YEAR}"
+if [ "$leapYear" == 0 ]
+then
+	 printf "\n"
+     printf "This is not a Leap year.\n"
+	 printf "\n"
+else
+	 printf "\n"
+     printf "This is a Leap year.\n"
+	 printf "\n"
+fi
+
+# Calculate from which day the month starts from
+firstDayOfMonth "${MONTH}" "${YEAR}"
+# Get how many days does this month contain
+numDaysInMonth "${MONTH}"
+# Print the calendar for the given month and year
+printCalendar "${MONTH}" "${YEAR}"
